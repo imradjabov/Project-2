@@ -43,6 +43,32 @@ function FontLoad() {
       .qk-mono { font-family: 'JetBrains Mono', monospace; }
       .qk-input::placeholder { color: rgba(234,243,241,0.35); }
       @keyframes qkFade { 0%{opacity:0; transform:translateY(4px);} 10%{opacity:1; transform:translateY(0);} 90%{opacity:1;} 100%{opacity:0; transform:translateY(-4px);} }
+
+      html, body, #root { height: 100%; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 50% 0%, #16383D 0%, #08181A 70%);
+        min-height: 100dvh;
+      }
+      #root {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        box-sizing: border-box;
+      }
+      .qk-shell {
+        width: 100%;
+        max-width: 400px;
+        min-height: 660px;
+        border-radius: 26px;
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+      }
+      @media (max-width: 480px) {
+        #root { padding: 0; }
+        .qk-shell { max-width: 100%; min-height: 100dvh; border-radius: 0; box-shadow: none; }
+      }
     `}</style>
   );
 }
@@ -903,7 +929,7 @@ export default function App() {
   const currentShop = data.shops.find((s) => s.id === currentShopId);
 
   return (
-    <div className="qk-root" style={{ background: bgGrad, borderRadius: 16, maxWidth: 380, margin: "0 auto", minHeight: 560, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div className="qk-root qk-shell" style={{ background: bgGrad, position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <FontLoad />
 
       {phase === "loading" && (

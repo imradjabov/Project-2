@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import * as XLSX from "xlsx";
 import {
   loadAll, createShop, updateShopInfo, deleteShopRow, updateAdminCredentials,
   addSellerRow, removeSellerRow, createDebtorRow, addAmountToDebtor,
@@ -12,6 +13,30 @@ const fmtTime = (iso) => { if (!iso) return ""; const d = new Date(iso); return 
 const daysUntil = (iso) => { if (!iso) return 999; const due = new Date(iso); const now = new Date(); due.setHours(0, 0, 0, 0); now.setHours(0, 0, 0, 0); return Math.round((due - now) / 86400000); };
 const autoColor = (dueIso) => { const d = daysUntil(dueIso); if (d > 7) return "green"; if (d >= 1) return "yellow"; if (d >= -4) return "red"; return "black"; };
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+function exportDebtorsXlsx(shop, periodKey) {
+  const now = new Date();
+  const list = shop.debtors.filter((d) => {
+    const created = new Date(d.createdAt);
+    if (periodKey === "daily") return created.toDateString() === now.toDateString();
+    if (periodKey === "monthly") return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
+    if (periodKey === "yearly") return created.getFullYear() === now.getFullYear();
+    return true; // "all"
+  });
+  const header = ["ISM FAMILYA", "QARZ MIQDORI ", "QARZ OLINGAN kun/oy/yil", "QARZ BERGAN SOTUVCHI"];
+  const rows = list.map((d) => ({
+    "ISM FAMILYA": d.name,
+    "QARZ MIQDORI ": d.amount,
+    "QARZ OLINGAN kun/oy/yil": fmtDate(d.createdAt),
+    "QARZ BERGAN SOTUVCHI": shop.sellers.find((s) => s.id === d.sellerId)?.name || "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows, { header });
+  ws["!cols"] = [{ wch: 24 }, { wch: 16 }, { wch: 22 }, { wch: 22 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Qarzdorlar");
+  const label = { daily: "kunlik", monthly: "oylik", yearly: "yillik", all: "butun_tarix" }[periodKey];
+  XLSX.writeFile(wb, `qarzdorlar_${label}_${fmtDate(now.toISOString())}.xlsx`);
+}
 
 // ---------- shared design tokens ----------
 const bgGrad = "linear-gradient(135deg, #0E2A2E 0%, #16383D 45%, #1C4A45 100%)";
@@ -320,6 +345,7 @@ function ReportPage({ shop, refreshAll }) {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [selected, setSelected] = useState(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const listRef = useRef(null);
 
   const sorted = [...shop.debtors].sort((a, b) => a.name.localeCompare(b.name));
@@ -373,6 +399,34 @@ function ReportPage({ shop, refreshAll }) {
             <button key={L} onClick={() => scrollToLetter(L)} style={{ background: "none", border: "none", color: textFaint, fontSize: 9, fontWeight: 700, cursor: "pointer", padding: "1px 0" }}>{L}</button>
           ))}
         </div>
+      </div>
+
+      <div style={{ position: "absolute", bottom: 0, right: 44 }}>
+        <button
+          onClick={() => setShowExportMenu((v) => !v)}
+          title="Ro'yxatni yuklab olish"
+          style={{ width: 36, height: 36, borderRadius: 10, background: showExportMenu ? accent : glass, border: `1px solid ${glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer" }}
+        >
+          ⬇️
+        </button>
+        {showExportMenu && (
+          <div style={{ position: "absolute", bottom: 44, right: 0, background: "#0E2A2E", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: 6, width: 160, boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}>
+            {[
+              { key: "daily", label: "Kunlik" },
+              { key: "monthly", label: "Oylik" },
+              { key: "yearly", label: "Yillik" },
+              { key: "all", label: "Butun tarix" },
+            ].map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => { exportDebtorsXlsx(shop, opt.key); setShowExportMenu(false); }}
+                style={{ width: "100%", textAlign: "left", padding: "9px 10px", borderRadius: 8, border: "none", background: "none", color: text, fontSize: 13, cursor: "pointer" }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ position: "absolute", bottom: 0, right: 0 }}>

@@ -39,9 +39,9 @@ function exportDebtorsXlsx(shop, periodKey) {
 }
 
 // ---------- shared design tokens ----------
-const bgGrad = "linear-gradient(135deg, #0E2A2E 0%, #16383D 45%, #1C4A45 100%)";
-const glass = "rgba(255,255,255,0.06)";
-const glassBorder = "rgba(255,255,255,0.12)";
+const bgGrad = "linear-gradient(135deg, #0A1A2E 0%, #123B4D 28%, #1B4B5A 52%, #1E5A63 72%, #2E8C7C 100%)";
+const glass = "rgba(255,255,255,0.10)";
+const glassBorder = "rgba(255,255,255,0.22)";
 const text = "#EAF3F1";
 const textSoft = "rgba(234,243,241,0.62)";
 const textFaint = "rgba(234,243,241,0.4)";
@@ -50,6 +50,7 @@ const accent = "#2FBF9E";
 const danger = "#E0554B";
 const warn = "#E8B94A";
 const blackTag = "#7C8792";
+const glassPanel = "rgba(9,22,27,0.55)";
 const tagColor = { green: accent, yellow: warn, red: danger, black: blackTag };
 const tagLabel = { green: "Yashil", yellow: "Sariq", red: "Qizil", black: "Qora" };
 
@@ -62,10 +63,10 @@ const inputStyle = {
 function FontLoad() {
   return (
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@500;600&display=swap');
-      .qk-root { font-family: 'Manrope', sans-serif; }
-      .qk-serif { font-family: 'Fraunces', serif; }
-      .qk-mono { font-family: 'JetBrains Mono', monospace; }
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+      .qk-root { font-family: 'Space Grotesk', sans-serif; }
+      .qk-serif { font-family: 'Space Grotesk', sans-serif; font-weight: 600; letter-spacing: -0.01em; }
+      .qk-mono { font-family: 'Space Mono', monospace; }
       .qk-input::placeholder { color: rgba(234,243,241,0.35); }
       @keyframes qkFade { 0%{opacity:0; transform:translateY(4px);} 10%{opacity:1; transform:translateY(0);} 90%{opacity:1;} 100%{opacity:0; transform:translateY(-4px);} }
 
@@ -157,7 +158,7 @@ function AddDebtModal({ shop, refreshAll, onClose }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", borderRadius: 16, zIndex: 20 }}>
-      <div style={{ width: "100%", maxHeight: "88%", overflowY: "auto", background: "#0E2A2E", borderRadius: "16px 16px 0 0", padding: "18px 18px 22px", border: `1px solid ${glassBorder}` }}>
+      <div style={{ width: "100%", maxHeight: "88%", overflowY: "auto", background: glassPanel, backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderRadius: "20px 20px 0 0", padding: "18px 18px 22px", border: `1px solid ${glassBorder}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <p className="qk-serif" style={{ fontSize: 16, fontWeight: 600, color: text, margin: 0 }}>Yangi qarz yaratish</p>
           <button onClick={onClose} style={{ background: "none", border: "none", color: textSoft, fontSize: 18, cursor: "pointer" }}>✕</button>
@@ -170,7 +171,7 @@ function AddDebtModal({ shop, refreshAll, onClose }) {
             <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10 }}>
               {matches.length === 0 && <p style={{ fontSize: 12, color: textFaint, margin: "0 0 8px" }}>Hech kim topilmadi.</p>}
               {matches.map((m) => (
-                <button key={m.id} onClick={() => { setTarget(m); setMode("addExisting"); setErr(""); }} style={{ width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, cursor: "pointer" }}>
+                <button key={m.id} onClick={() => { setTarget(m); setMode("addExisting"); setErr(""); }} style={{ width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, cursor: "pointer" }}>
                   <span style={{ fontSize: 13, color: text }}>{m.name}</span>
                   <span className="qk-mono" style={{ fontSize: 12, color: danger }}>{fmt(m.amount)}</span>
                 </button>
@@ -247,7 +248,7 @@ function PayDebtModal({ shop, refreshAll, onClose }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", borderRadius: 16, zIndex: 20 }}>
-      <div style={{ width: "100%", maxHeight: "88%", overflowY: "auto", background: "#0E2A2E", borderRadius: "16px 16px 0 0", padding: "18px 18px 22px", border: `1px solid ${glassBorder}` }}>
+      <div style={{ width: "100%", maxHeight: "88%", overflowY: "auto", background: glassPanel, backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderRadius: "20px 20px 0 0", padding: "18px 18px 22px", border: `1px solid ${glassBorder}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <p className="qk-serif" style={{ fontSize: 16, fontWeight: 600, color: text, margin: 0 }}>Qarz qaytarish</p>
           <button onClick={onClose} style={{ background: "none", border: "none", color: textSoft, fontSize: 18, cursor: "pointer" }}>✕</button>
@@ -261,7 +262,7 @@ function PayDebtModal({ shop, refreshAll, onClose }) {
               <div key={dateKey} style={{ marginBottom: 10 }}>
                 <p style={{ fontSize: 11, color: textFaint, margin: "8px 0 6px" }}>{dateKey}</p>
                 {grouped[dateKey].map((d) => (
-                  <button key={d.id} onClick={() => setTarget(d)} style={{ width: "100%", textAlign: "left", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, cursor: "pointer" }}>
+                  <button key={d.id} onClick={() => setTarget(d)} style={{ width: "100%", textAlign: "left", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, cursor: "pointer" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontSize: 13, color: text, fontWeight: 600 }}>{d.name}</span>
                       <span className="qk-mono" style={{ fontSize: 12, color: danger }}>{fmt(d.amount)}</span>
@@ -410,7 +411,7 @@ function ReportPage({ shop, refreshAll }) {
           ⬇️
         </button>
         {showExportMenu && (
-          <div style={{ position: "absolute", bottom: 44, right: 0, background: "#0E2A2E", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: 6, width: 160, boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}>
+          <div style={{ position: "absolute", bottom: 44, right: 0, background: glassPanel, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: `1px solid ${glassBorder}`, borderRadius: 14, padding: 6, width: 160, boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}>
             {[
               { key: "daily", label: "Kunlik" },
               { key: "monthly", label: "Oylik" },
@@ -459,7 +460,7 @@ function OwnerAnalytics({ shop }) {
   const paidSum7 = paidLast7.reduce((s, h) => s + h.amount, 0);
 
   const Stat = ({ label, value, color }) => (
-    <div style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", flex: 1, minWidth: 0 }}>
+    <div style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 10, color: textSoft, margin: "0 0 4px" }}>{label}</p>
       <p className="qk-mono" style={{ fontSize: 15, fontWeight: 700, color: color || text, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
     </div>
@@ -467,7 +468,7 @@ function OwnerAnalytics({ shop }) {
 
   return (
     <>
-      <div style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
+      <div style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
         <p style={{ fontSize: 11, color: textSoft, margin: "0 0 4px" }}>UMUMIY QARZ MIQDORI</p>
         <p className="qk-mono" style={{ fontSize: 24, fontWeight: 700, color: accent, margin: 0 }}>{fmt(totalDebt)}</p>
       </div>
@@ -543,7 +544,7 @@ function HistoryPage({ historyLog }) {
       </div>
       {list.length === 0 && <p style={{ fontSize: 12, color: textFaint, textAlign: "center", padding: "20px 0" }}>Tarix bo'sh.</p>}
       {list.map((h) => (
-        <div key={h.id} style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "11px 14px", marginBottom: 8 }}>
+        <div key={h.id} style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "11px 14px", marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: text, margin: "0 0 2px" }}>{h.debtorName}</p>
             <p className="qk-mono" style={{ fontSize: 13, color: tab === "paid" ? accent : danger, margin: 0 }}>{fmt(h.amount)}</p>
@@ -571,7 +572,7 @@ function SellersPage({ shop, refreshAll }) {
   return (
     <div>
       {showForm ? (
-        <div style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
+        <div style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <input className="qk-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ism familiya" style={inputStyle} autoFocus />
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => { setShowForm(false); setName(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 9, border: `1px solid ${glassBorder}`, background: "none", color: textSoft, fontSize: 13, cursor: "pointer" }}>Bekor qilish</button>
@@ -583,7 +584,7 @@ function SellersPage({ shop, refreshAll }) {
       )}
       {shop.sellers.length === 0 && <p style={{ fontSize: 12, color: textFaint, textAlign: "center", padding: "12px 0" }}>Hali sotuvchi qo'shilmagan.</p>}
       {shop.sellers.map((s) => (
-        <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "11px 14px", marginBottom: 8 }}>
+        <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "11px 14px", marginBottom: 8 }}>
           <span style={{ fontSize: 13, color: text }}>{s.name}</span>
           <button onClick={() => remove(s.id)} style={{ background: "none", border: "1px solid rgba(224,85,75,0.4)", borderRadius: 8, color: danger, fontSize: 12, padding: "5px 8px", cursor: "pointer" }}>✕</button>
         </div>
@@ -655,7 +656,7 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
     body = <SellersPage shop={shop} refreshAll={refreshAll} />;
   } else if (page === "contact") {
     body = (
-      <div style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 16, padding: "26px 20px", textAlign: "center" }}>
+      <div style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 16, padding: "26px 20px", textAlign: "center" }}>
         <div style={{ width: 56, height: 56, borderRadius: "50%", background: accentGrad, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>💬</div>
         <p className="qk-serif" style={{ fontSize: 17, fontWeight: 600, color: text, margin: "0 0 4px" }}>Admin bilan bog'lanish</p>
         <p style={{ fontSize: 12, color: textSoft, margin: "0 0 20px" }}>Savol yoki muammo bo'lsa, quyidagi aloqa orqali murojaat qiling</p>
@@ -693,7 +694,7 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
 
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 5 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 250, background: "#0E2A2E", borderRight: `1px solid ${glassBorder}`, padding: "20px 14px", zIndex: 6 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 250, background: glassPanel, backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderRight: `1px solid ${glassBorder}`, padding: "20px 14px", zIndex: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, padding: "0 6px" }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: "#08221E" }}>qk</div>
               <p style={{ fontSize: 14, fontWeight: 700, color: text, margin: 0 }}>{shop.name}</p>
@@ -744,7 +745,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
   const goto = (key) => { setPage(key); setSidebarOpen(false); setShowShopForm(false); setEditingShopId(null); setSelectedShopId(null); };
 
   const StatCard = ({ label, value }) => (
-    <div style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 14, padding: "14px 16px", flex: 1, minWidth: 0 }}>
+    <div style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 14, padding: "14px 16px", flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 11, color: textSoft, margin: "0 0 6px" }}>{label}</p>
       <p className="qk-mono" style={{ fontSize: 18, fontWeight: 600, color: text, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
     </div>
@@ -796,7 +797,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
         </div>
         {shops.length === 0 && <p style={{ fontSize: 13, color: textSoft, textAlign: "center", padding: "16px 0" }}>Hali do'kon qo'shilmagan.</p>}
         {shops.slice(0, 4).map((s) => (
-          <div key={s.id} style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
+          <div key={s.id} style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: text, margin: "0 0 2px" }}>{s.name}</p>
             <p style={{ fontSize: 12, color: textSoft, margin: 0 }}>{s.address || "Manzil kiritilmagan"}</p>
           </div>
@@ -827,7 +828,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
       body = (
         <>
           {shops.length === 0 ? <p style={{ fontSize: 13, color: textSoft, textAlign: "center", padding: "60px 0 20px" }}>Hali do'kon qo'shilmagan.</p> : shops.map((s) => (
-            <div key={s.id} style={{ background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
+            <div key={s.id} style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p style={{ fontSize: 14, fontWeight: 600, color: text, margin: "0 0 2px" }}>{s.name}</p>
@@ -853,7 +854,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
         <>
           <p style={{ fontSize: 12, color: textSoft, margin: "0 0 12px" }}>Analitikasini ko'rish uchun do'konni tanlang</p>
           {shops.map((s) => (
-            <button key={s.id} onClick={() => setSelectedShopId(s.id)} style={{ width: "100%", textAlign: "left", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}>
+            <button key={s.id} onClick={() => setSelectedShopId(s.id)} style={{ width: "100%", textAlign: "left", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: text, margin: "0 0 2px" }}>{s.name}</p>
               <p style={{ fontSize: 12, color: textSoft, margin: 0 }}>{s.address || "Manzil kiritilmagan"}</p>
             </button>
@@ -914,7 +915,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
 
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 5 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 250, background: "#0E2A2E", borderRight: `1px solid ${glassBorder}`, padding: "20px 14px", zIndex: 6 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 250, background: glassPanel, backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderRight: `1px solid ${glassBorder}`, padding: "20px 14px", zIndex: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, padding: "0 6px" }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: accentGrad, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: "#08221E" }}>qk</div>
               <p style={{ fontSize: 14, fontWeight: 700, color: text, margin: 0 }}>q.Kassa.uz</p>
@@ -995,7 +996,7 @@ export default function App() {
       {phase === "login" && (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(47,191,158,0.25), transparent 70%)" }} />
-          <div style={{ width: "100%", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 18, padding: "32px 26px", backdropFilter: "blur(10px)", position: "relative" }}>
+          <div style={{ width: "100%", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 18, padding: "32px 26px", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", position: "relative" }}>
             <div style={{ textAlign: "center", marginBottom: 22 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: accentGrad, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 20, color: "#08221E" }}>qk</div>
               <p style={{ fontSize: 19, fontWeight: 700, color: text, margin: "0 0 2px" }}>Xush kelibsiz!</p>

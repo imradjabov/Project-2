@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import {
   loadAll, createShop, updateShopInfo, deleteShopRow, updateAdminCredentials,
   addSellerRow, removeSellerRow, createDebtorRow, addAmountToDebtor,
-  updateDebtorProfileRow, payDebtorRow, addHistoryRow,
+  updateDebtorProfileRow, payDebtorRow, addHistoryRow, bulkImportDebtors,
 } from "./db";
 
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -342,11 +342,134 @@ function DebtorProfile({ d, shop, refreshAll, onBack }) {
   );
 }
 
+function parseDateFlexible(val) {
+  if (val instanceof Date && !isNaN(val)) return val.toISOString();
+  if (typeof val === "number") {
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    if (!isNaN(d)) return d.toISOString();
+  }
+  if (typeof val === "string") {
+    const m = val.trim().match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+    if (m) {
+      const [, d, mo, y] = m;
+      const dt = new Date(`${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}T00:00:00`);
+      if (!isNaN(dt)) return dt.toISOString();
+    }
+  }
+  return new Date().toISOString();
+}
+function parseAmountFlexible(val) {
+  const n = parseFloat(String(val).replace(/[^\d.]/g, ""));
+  return isNaN(n) ? 0 : Math.round(n);
+}
+function normalizeKey(k) { return String(k || "").trim().toLowerCase(); }
+
+function ImportDebtorsModal({ shop, refreshAll, onClose }) {
+  const [rows, setRows] = useState(null); // parsed preview rows
+  const [fileName, setFileName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [done, setDone] = useState(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setErr(""); setFileName(file.name);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array", cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      const parsed = json.map((row) => {
+        const map = {};
+        Object.keys(row).forEach((k) => { map[normalizeKey(k)] = row[k]; });
+        const name = String(map["ism familiya"] || "").trim();
+        const amount = parseAmountFlexible(map["qarz miqdori"] || 0);
+        const createdAt = parseDateFlexible(map["qarz olingan kun/oy/yil"]);
+        const sellerName = String(map["qarz bergan sotuvchi"] || "").trim();
+        return { name, amount, createdAt, sellerName };
+      }).filter((r) => r.name && r.amount > 0);
+      if (parsed.length === 0) setErr("Faylda to'g'ri qatorlar topilmadi. Shablon ustunlari mos kelayotganini tekshiring.");
+      setRows(parsed);
+    } catch (e) {
+      setErr("Faylni o'qib bo'lmadi. .xlsx formatida ekanini tekshiring.");
+      setRows(null);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!rows || rows.length === 0) return;
+    setBusy(true); setErr("");
+    try {
+      const result = await bulkImportDebtors(shop.id, shop.sellers, rows);
+      await refreshAll();
+      setDone(result);
+    } catch (e) {
+      setErr("Saqlashda xatolik yuz berdi, qayta urinib ko'ring.");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-end", borderRadius: 16, zIndex: 20 }}>
+      <div style={{ width: "100%", maxHeight: "88%", overflowY: "auto", background: glassPanel, backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderRadius: "20px 20px 0 0", padding: "18px 18px 22px", border: `1px solid ${glassBorder}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <p className="qk-serif" style={{ fontSize: 16, fontWeight: 600, color: text, margin: 0 }}>Excel'dan qarzdorlarni import qilish</p>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: textSoft, fontSize: 18, cursor: "pointer" }}>✕</button>
+        </div>
+
+        {done ? (
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <p style={{ fontSize: 30, margin: "0 0 10px" }}>✅</p>
+            <p style={{ fontSize: 14, color: text, margin: "0 0 6px" }}>{done.imported} ta qarzdor muvaffaqiyatli qo'shildi</p>
+            {done.newSellers > 0 && <p style={{ fontSize: 12, color: textFaint, margin: "0 0 16px" }}>{done.newSellers} ta yangi sotuvchi ham avtomatik yaratildi</p>}
+            <button onClick={onClose} style={{ padding: "11px 24px", borderRadius: 9, border: "none", background: accentGrad, color: "#08221E", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Yopish</button>
+          </div>
+        ) : !rows ? (
+          <div>
+            <p style={{ fontSize: 12, color: textSoft, margin: "0 0 14px" }}>
+              Eski qarzdorlar ro'yxatini shablon bo'yicha (ISM FAMILYA, QARZ MIQDORI, QARZ OLINGAN kun/oy/yil, QARZ BERGAN SOTUVCHI) to'ldirilgan .xlsx faylni tanlang.
+            </p>
+            <label style={{ display: "block", border: `2px dashed ${glassBorder}`, borderRadius: 14, padding: "30px 16px", textAlign: "center", cursor: "pointer" }}>
+              <input type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: "none" }} />
+              <p style={{ fontSize: 26, margin: "0 0 8px" }}>📤</p>
+              <p style={{ fontSize: 13, color: accent, fontWeight: 600, margin: 0 }}>Fayl tanlash uchun bosing</p>
+              <p style={{ fontSize: 11, color: textFaint, margin: "4px 0 0" }}>.xlsx yoki .xls</p>
+            </label>
+            {err && <p style={{ fontSize: 12, color: danger, margin: "12px 0 0" }}>{err}</p>}
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 12, color: textSoft, margin: "0 0 4px" }}>{fileName}</p>
+            <p style={{ fontSize: 13, color: text, fontWeight: 600, margin: "0 0 12px" }}>{rows.length} ta qator topildi — tekshirib chiqing:</p>
+            <div style={{ maxHeight: 220, overflowY: "auto", marginBottom: 14, border: `1px solid ${glassBorder}`, borderRadius: 12 }}>
+              {rows.map((r, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 12px", borderBottom: i < rows.length - 1 ? `1px solid ${glassBorder}` : "none" }}>
+                  <div>
+                    <p style={{ fontSize: 13, color: text, margin: "0 0 2px" }}>{r.name}</p>
+                    <p style={{ fontSize: 11, color: textFaint, margin: 0 }}>{fmtDate(r.createdAt)}{r.sellerName ? ` · ${r.sellerName}` : ""}</p>
+                  </div>
+                  <p className="qk-mono" style={{ fontSize: 13, color: danger, margin: 0 }}>{fmt(r.amount)}</p>
+                </div>
+              ))}
+            </div>
+            {err && <p style={{ fontSize: 12, color: danger, margin: "0 0 10px" }}>{err}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setRows(null); setFileName(""); }} style={{ flex: 1, padding: "12px", borderRadius: 9, border: `1px solid ${glassBorder}`, background: "none", color: textSoft, fontSize: 13, cursor: "pointer" }}>Boshqa fayl</button>
+              <button disabled={busy} onClick={confirmImport} style={{ flex: 1, padding: "12px", borderRadius: 9, border: "none", background: accentGrad, color: "#08221E", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>{busy ? "Saqlanmoqda..." : "✓ Tasdiqlash"}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ReportPage({ shop, refreshAll }) {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [selected, setSelected] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const listRef = useRef(null);
 
   const sorted = [...shop.debtors].sort((a, b) => a.name.localeCompare(b.name));
@@ -371,10 +494,16 @@ function ReportPage({ shop, refreshAll }) {
 
   return (
     <div style={{ position: "relative", height: "100%" }}>
-      <div style={{ display: "flex", height: "100%", paddingBottom: 40 }}>
+      <div style={{ display: "flex", height: "100%", paddingBottom: 44 }}>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <input className="qk-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Ism familiya orqali qidirish" style={inputStyle} />
-          <div ref={listRef} style={{ flex: 1, overflowY: "auto", maxHeight: 340 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, width: 40, height: 40, cursor: "pointer" }} />
+              <div style={{ width: 40, height: 40, borderRadius: 9, background: dateFilter ? accent : glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📅</div>
+            </div>
+            <input className="qk-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Ism familiya orqali qidirish" style={{ ...inputStyle, marginBottom: 0, flex: 1 }} />
+          </div>
+          <div ref={listRef} style={{ flex: 1, overflowY: "auto", maxHeight: 330, marginTop: 8 }}>
             {filtered.length === 0 && <p style={{ fontSize: 12, color: textFaint, textAlign: "center", padding: "30px 0" }}>Qarzdorlar topilmadi.</p>}
             {filtered.map((d) => {
               const L = d.name.charAt(0).toUpperCase();
@@ -402,11 +531,21 @@ function ReportPage({ shop, refreshAll }) {
         </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 0, right: 44 }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0 }}>
+        <button
+          onClick={() => setShowImportModal(true)}
+          title="Excel'dan qarzdorlarni import qilish"
+          style={{ width: 36, height: 36, borderRadius: 10, background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, cursor: "pointer" }}
+        >
+          📤
+        </button>
+      </div>
+
+      <div style={{ position: "absolute", bottom: 0, right: 0 }}>
         <button
           onClick={() => setShowExportMenu((v) => !v)}
           title="Ro'yxatni yuklab olish"
-          style={{ width: 36, height: 36, borderRadius: 10, background: showExportMenu ? accent : glass, border: `1px solid ${glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer" }}
+          style={{ width: 36, height: 36, borderRadius: 10, background: showExportMenu ? accent : glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer" }}
         >
           ⬇️
         </button>
@@ -430,10 +569,7 @@ function ReportPage({ shop, refreshAll }) {
         )}
       </div>
 
-      <div style={{ position: "absolute", bottom: 0, right: 0 }}>
-        <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, width: 36, height: 36, cursor: "pointer" }} />
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: dateFilter ? accent : glass, border: `1px solid ${glassBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📅</div>
-      </div>
+      {showImportModal && <ImportDebtorsModal shop={shop} refreshAll={refreshAll} onClose={() => setShowImportModal(false)} />}
     </div>
   );
 }

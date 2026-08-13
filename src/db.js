@@ -152,10 +152,43 @@ export async function payDebtorRow(debtorId, remainingAmount) {
 }
 
 // ---------- HISTORY ----------
-export async function addHistoryRow(shopId, { kind, debtorName, amount, sellerName, note }) {
-  const { data, error } = await supabase.from("history_log")
-    .insert({ shop_id: shopId, kind, debtor_name: debtorName, amount, seller_name: sellerName || "", note: note || "" })
-    .select().single();
+export async function addHistoryRow(shopId, { kind, debtorName, amount, sellerName, note, createdAt }) {
+  const payload = { shop_id: shopId, kind, debtor_name: debtorName, amount, seller_name: sellerName || "", note: note || "" };
+  if (createdAt) payload.created_at = createdAt;
+  const { data, error } = await supabase.from("history_log").insert(payload).select().single();
   if (error) throw error;
   return mapHistory(data);
+}
+
+// ---------- BULK IMPORT (from Excel) ----------
+export async function bulkImportDebtors(shopId, existingSellers, rows) {
+  // rows: [{ name, amount, createdAt(ISO), sellerName }]
+  const existingByName = new Map(existingSellers.map((s) => [s.name.trim().toLowerCase(), s.id]));
+  const neededNames = [...new Set(rows.map((r) => (r.sellerName || "").trim()).filter((n) => n && !existingByName.has(n.toLowerCase())))];
+
+  let createdSellers = [];
+  if (neededNames.length > 0) {
+    const { data: newSellers, error: sErr } = await supabase
+      .from("sellers").insert(neededNames.map((name) => ({ shop_id: shopId, name }))).select();
+    if (sErr) throw sErr;
+    createdSellers = newSellers || [];
+    createdSellers.forEach((s) => existingByName.set(s.name.trim().toLowerCase(), s.id));
+  }
+
+  const debtorInsertRows = rows.map((r) => ({
+    shop_id: shopId, name: r.name, phone: "", amount: r.amount, due_date: null,
+    seller_id: r.sellerName ? existingByName.get(r.sellerName.trim().toLowerCase()) || null : null,
+    created_at: r.createdAt,
+  }));
+  const { error: dErr } = await supabase.from("debtors").insert(debtorInsertRows);
+  if (dErr) throw dErr;
+
+  const historyInsertRows = rows.map((r) => ({
+    shop_id: shopId, kind: "added", debtor_name: r.name, amount: r.amount,
+    seller_name: r.sellerName || "", note: "Excel orqali import qilindi", created_at: r.createdAt,
+  }));
+  const { error: hErr } = await supabase.from("history_log").insert(historyInsertRows);
+  if (hErr) throw hErr;
+
+  return { imported: rows.length, newSellers: createdSellers.length };
 }

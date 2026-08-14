@@ -1000,6 +1000,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
     { key: "dashboard", label: "Dashboard", icon: "▦" },
     { key: "shops", label: "Ma'lumotlar va Avtorizatsiya", icon: "🏬" },
     { key: "analytics", label: "Analitika", icon: "📊" },
+    { key: "bot", label: "Bot va ID sozlamalari", icon: "🤖" },
     { key: "settings", label: "Admin sozlamalari", icon: "⚙️" },
   ];
   const pageTitle = menuItems.find((m) => m.key === page)?.label || "Dashboard";
@@ -1132,6 +1133,8 @@ function AdminPanel({ data, refreshAll, onLogout }) {
         </>
       );
     }
+  } else if (page === "bot") {
+    body = <BotControlPage shops={shops} refreshAll={refreshAll} />;
   } else if (page === "settings") {
     body = (
       <>

@@ -4,12 +4,13 @@ import { supabase } from "./supabaseClient";
 const mapShop = (r) => ({
   id: r.id, name: r.name, productType: r.product_type || "", phone: r.phone || "",
   address: r.address || "", login: r.login, pass: r.pass,
+  nextDebtorNumber: r.next_debtor_number || 1, botToken: r.bot_token || "",
 });
 const mapSeller = (r) => ({ id: r.id, name: r.name });
 const mapDebtor = (r) => ({
   id: r.id, name: r.name, phone: r.phone || "", amount: Number(r.amount),
   dueDate: r.due_date, colorOverride: r.color_override, sellerId: r.seller_id,
-  createdAt: r.created_at,
+  createdAt: r.created_at, debtorNumber: r.debtor_number, telegramChatId: r.telegram_chat_id,
 });
 const mapHistory = (r) => ({
   id: r.id, kind: r.kind, debtorName: r.debtor_name, amount: Number(r.amount),
@@ -117,11 +118,22 @@ export async function removeSellerRow(sellerId) {
 
 // ---------- DEBTORS ----------
 export async function createDebtorRow(shopId, { name, phone, amount, dueDate, sellerId }) {
-  const { data, error } = await supabase.from("debtors")
-    .insert({ shop_id: shopId, name, phone, amount, due_date: dueDate, seller_id: sellerId || null })
-    .select().single();
+  const { data, error } = await supabase.rpc("create_debtor_with_id", {
+    p_shop_id: shopId, p_name: name, p_phone: phone, p_amount: amount,
+    p_due_date: dueDate || null, p_seller_id: sellerId || null,
+  });
   if (error) throw error;
   return mapDebtor(data);
+}
+
+export async function updateDebtorNumberRow(debtorId, newNumber) {
+  const { error } = await supabase.from("debtors").update({ debtor_number: newNumber }).eq("id", debtorId);
+  if (error) throw error;
+}
+
+export async function updateShopBotToken(shopId, botToken) {
+  const { error } = await supabase.from("shops").update({ bot_token: botToken }).eq("id", shopId);
+  if (error) throw error;
 }
 
 export async function addAmountToDebtor(debtorId, newAmount, dueDate) {

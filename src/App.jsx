@@ -4,6 +4,7 @@ import {
   loadAll, createShop, updateShopInfo, deleteShopRow, updateAdminCredentials,
   addSellerRow, removeSellerRow, createDebtorRow, addAmountToDebtor,
   updateDebtorProfileRow, payDebtorRow, addHistoryRow, bulkImportDebtors,
+  updateDebtorNumberRow, updateShopBotToken,
 } from "./db";
 
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -201,6 +202,10 @@ function AddDebtModal({ shop, refreshAll, onClose }) {
 
         {mode === "newCustomer" && (
           <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(47,191,158,0.12)", border: `1px solid ${accent}`, borderRadius: 9, padding: "9px 12px", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, color: textSoft }}>Mijoz ID raqami</span>
+              <span className="qk-mono" style={{ fontSize: 14, color: accent, fontWeight: 700 }}>{String(shop.nextDebtorNumber).padStart(2, "0")}</span>
+            </div>
             <input className="qk-input" value={nName} onChange={(e) => setNName(e.target.value)} placeholder="Ism familiya" style={inputStyle} />
             <input className="qk-input" value={nPhone} onChange={(e) => setNPhone(e.target.value)} placeholder="Telefon raqami" style={inputStyle} />
             <input className="qk-input" value={nAmount} onChange={(e) => setNAmount(e.target.value.replace(/\D/g, ""))} placeholder="Qarz summasi" inputMode="numeric" style={inputStyle} />
@@ -323,6 +328,12 @@ function DebtorProfile({ d, shop, refreshAll, onBack }) {
   return (
     <div>
       <button onClick={onBack} style={{ background: "none", border: "none", color: accent, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }}>← Ro'yxatga</button>
+      {d.debtorNumber != null && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(47,191,158,0.12)", border: `1px solid ${accent}`, borderRadius: 9, padding: "9px 12px", marginBottom: 10 }}>
+          <span style={{ fontSize: 12, color: textSoft }}>Mijoz ID raqami</span>
+          <span className="qk-mono" style={{ fontSize: 14, color: accent, fontWeight: 700 }}>{String(d.debtorNumber).padStart(2, "0")}</span>
+        </div>
+      )}
       <input className="qk-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ism familiya" style={inputStyle} />
       <input className="qk-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefon raqami" style={inputStyle} />
       <input className="qk-input" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} placeholder="Qarz summasi" inputMode="numeric" style={inputStyle} />
@@ -869,6 +880,102 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
 }
 
 // ================= ADMIN PANEL =================
+
+function BotControlPage({ shops, refreshAll }) {
+  const [selectedShopId, setSelectedShopId] = useState(null);
+  const [showTokenForm, setShowTokenForm] = useState(false);
+  const [tokenVal, setTokenVal] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editVal, setEditVal] = useState("");
+
+  const shop = shops.find((s) => s.id === selectedShopId);
+
+  if (!shop) {
+    return (
+      <>
+        <p style={{ fontSize: 12, color: textSoft, margin: "0 0 12px" }}>Bot sozlamalarini ko'rish uchun do'konni tanlang</p>
+        {shops.length === 0 && <p style={{ fontSize: 13, color: textSoft, textAlign: "center", padding: "40px 0" }}>Hali do'kon qo'shilmagan.</p>}
+        {shops.map((s) => (
+          <button key={s.id} onClick={() => setSelectedShopId(s.id)} style={{ width: "100%", textAlign: "left", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: text, margin: "0 0 2px" }}>{s.name}</p>
+              <p style={{ fontSize: 11, color: textFaint, margin: 0 }}>{s.botToken ? "🟢 Bot ulangan" : "⚪ Bot ulanmagan"}</p>
+            </div>
+          </button>
+        ))}
+      </>
+    );
+  }
+
+  const saveToken = async () => {
+    if (!tokenVal.trim()) return;
+    setBusy(true);
+    try {
+      await updateShopBotToken(shop.id, tokenVal.trim());
+      await refreshAll();
+      setShowTokenForm(false); setTokenVal(""); setMsg("✓ Bot tokeni saqlandi");
+      setTimeout(() => setMsg(""), 2500);
+    } catch (e) { setMsg("Xatolik yuz berdi"); }
+    finally { setBusy(false); }
+  };
+
+  const saveDebtorNumber = async (debtorId) => {
+    const n = parseInt(editVal, 10);
+    if (isNaN(n)) return setEditingId(null);
+    const clash = shop.debtors.some((d) => d.id !== debtorId && d.debtorNumber === n);
+    if (clash) { setMsg("Bu ID raqami boshqa mijozda band"); return; }
+    try {
+      await updateDebtorNumberRow(debtorId, n);
+      await refreshAll();
+      setEditingId(null); setMsg("");
+    } catch (e) { setMsg("Xatolik yuz berdi"); }
+  };
+
+  return (
+    <>
+      <button onClick={() => setSelectedShopId(null)} style={{ background: "none", border: "none", color: accent, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }}>← Do'konlar ro'yxatiga</button>
+      <p style={{ fontSize: 16, fontWeight: 700, color: text, margin: "0 0 2px" }}>{shop.name}</p>
+      <p style={{ fontSize: 12, color: textSoft, margin: "0 0 16px" }}>{shop.botToken ? "🟢 Bot ulangan" : "⚪ Bot hali ulanmagan"}</p>
+
+      {!showTokenForm ? (
+        <button onClick={() => { setShowTokenForm(true); setTokenVal(shop.botToken || ""); }} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: accentGrad, color: "#08221E", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 20 }}>
+          {shop.botToken ? "Bot tokenini o'zgartirish" : "🤖 Botni ulash"}
+        </button>
+      ) : (
+        <div style={{ background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 12, padding: 14, marginBottom: 20 }}>
+          <p style={{ fontSize: 12, color: textSoft, margin: "0 0 8px" }}>BotFather'da yaratilgan botning tokenini kiriting:</p>
+          <input className="qk-input" value={tokenVal} onChange={(e) => setTokenVal(e.target.value)} placeholder="123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style={inputStyle} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => { setShowTokenForm(false); setTokenVal(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 9, border: `1px solid ${glassBorder}`, background: "none", color: textSoft, fontSize: 13, cursor: "pointer" }}>Bekor qilish</button>
+            <button disabled={busy} onClick={saveToken} style={{ flex: 1, padding: "10px 0", borderRadius: 9, border: "none", background: accentGrad, color: "#08221E", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>Saqlash</button>
+          </div>
+        </div>
+      )}
+      {msg && <p style={{ fontSize: 12, color: msg.startsWith("✓") ? accent : danger, margin: "-12px 0 16px" }}>{msg}</p>}
+
+      <p style={{ fontSize: 13, fontWeight: 700, color: text, margin: "0 0 10px" }}>Qarzdorlar va ID raqamlari</p>
+      {shop.debtors.length === 0 && <p style={{ fontSize: 12, color: textFaint }}>Hali qarzdor yo'q.</p>}
+      {[...shop.debtors].sort((a, b) => (a.debtorNumber || 999) - (b.debtorNumber || 999)).map((d) => (
+        <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 10, padding: "9px 12px", marginBottom: 6 }}>
+          <span style={{ fontSize: 13, color: text }}>{d.name}</span>
+          {editingId === d.id ? (
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <input value={editVal} onChange={(e) => setEditVal(e.target.value.replace(/\D/g, ""))} className="qk-mono" style={{ width: 44, padding: "4px 6px", borderRadius: 6, border: `1px solid ${accent}`, background: "rgba(255,255,255,0.08)", color: text, fontSize: 12 }} autoFocus />
+              <button onClick={() => saveDebtorNumber(d.id)} style={{ background: "none", border: "none", color: accent, fontSize: 13, cursor: "pointer" }}>✓</button>
+              <button onClick={() => setEditingId(null)} style={{ background: "none", border: "none", color: textFaint, fontSize: 13, cursor: "pointer" }}>✕</button>
+            </div>
+          ) : (
+            <button onClick={() => { setEditingId(d.id); setEditVal(String(d.debtorNumber ?? "")); }} className="qk-mono" style={{ background: "none", border: `1px solid ${glassBorder}`, borderRadius: 6, padding: "3px 8px", color: accent, fontSize: 12, cursor: "pointer" }}>
+              {d.debtorNumber != null ? String(d.debtorNumber).padStart(2, "0") : "— belgilash"}
+            </button>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
 
 function AdminPanel({ data, refreshAll, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);

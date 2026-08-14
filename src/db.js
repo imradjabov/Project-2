@@ -131,6 +131,12 @@ export async function updateDebtorNumberRow(debtorId, newNumber) {
   if (error) throw error;
 }
 
+export async function assignMissingIds(shopId) {
+  const { data, error } = await supabase.rpc("assign_missing_debtor_ids", { p_shop_id: shopId });
+  if (error) throw error;
+  return data; // count assigned
+}
+
 export async function updateShopBotToken(shopId, botToken) {
   const { error } = await supabase.from("shops").update({ bot_token: botToken }).eq("id", shopId);
   if (error) throw error;

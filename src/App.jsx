@@ -4,7 +4,7 @@ import {
   loadAll, createShop, updateShopInfo, deleteShopRow, updateAdminCredentials,
   addSellerRow, removeSellerRow, createDebtorRow, addAmountToDebtor,
   updateDebtorProfileRow, payDebtorRow, addHistoryRow, bulkImportDebtors,
-  updateDebtorNumberRow, updateShopBotToken,
+  updateDebtorNumberRow, updateShopBotToken, assignMissingIds,
 } from "./db";
 
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -204,7 +204,7 @@ function AddDebtModal({ shop, refreshAll, onClose }) {
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(47,191,158,0.12)", border: `1px solid ${accent}`, borderRadius: 9, padding: "9px 12px", marginBottom: 10 }}>
               <span style={{ fontSize: 12, color: textSoft }}>Mijoz ID raqami</span>
-              <span className="qk-mono" style={{ fontSize: 14, color: accent, fontWeight: 700 }}>{String(shop.nextDebtorNumber).padStart(2, "0")}</span>
+              <span className="qk-mono" style={{ fontSize: 12, color: accent, fontWeight: 700 }}>saqlanganda avtomatik beriladi</span>
             </div>
             <input className="qk-input" value={nName} onChange={(e) => setNName(e.target.value)} placeholder="Ism familiya" style={inputStyle} />
             <input className="qk-input" value={nPhone} onChange={(e) => setNPhone(e.target.value)} placeholder="Telefon raqami" style={inputStyle} />
@@ -331,7 +331,7 @@ function DebtorProfile({ d, shop, refreshAll, onBack }) {
       {d.debtorNumber != null && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(47,191,158,0.12)", border: `1px solid ${accent}`, borderRadius: 9, padding: "9px 12px", marginBottom: 10 }}>
           <span style={{ fontSize: 12, color: textSoft }}>Mijoz ID raqami</span>
-          <span className="qk-mono" style={{ fontSize: 14, color: accent, fontWeight: 700 }}>{String(d.debtorNumber).padStart(2, "0")}</span>
+          <span className="qk-mono" style={{ fontSize: 14, color: accent, fontWeight: 700 }}>{d.debtorNumber}</span>
         </div>
       )}
       <input className="qk-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ism familiya" style={inputStyle} />
@@ -889,8 +889,21 @@ function BotControlPage({ shops, refreshAll }) {
   const [msg, setMsg] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editVal, setEditVal] = useState("");
+  const [assigning, setAssigning] = useState(false);
 
   const shop = shops.find((s) => s.id === selectedShopId);
+  const missingCount = shop ? shop.debtors.filter((d) => d.debtorNumber == null).length : 0;
+
+  const runAssignMissing = async () => {
+    setAssigning(true);
+    try {
+      const count = await assignMissingIds(shop.id);
+      await refreshAll();
+      setMsg(`✓ ${count} ta mijozga ID berildi`);
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e) { setMsg("Xatolik yuz berdi"); }
+    finally { setAssigning(false); }
+  };
 
   if (!shop) {
     return (
@@ -924,13 +937,13 @@ function BotControlPage({ shops, refreshAll }) {
   const saveDebtorNumber = async (debtorId) => {
     const n = parseInt(editVal, 10);
     if (isNaN(n)) return setEditingId(null);
-    const clash = shop.debtors.some((d) => d.id !== debtorId && d.debtorNumber === n);
-    if (clash) { setMsg("Bu ID raqami boshqa mijozda band"); return; }
     try {
       await updateDebtorNumberRow(debtorId, n);
       await refreshAll();
       setEditingId(null); setMsg("");
-    } catch (e) { setMsg("Xatolik yuz berdi"); }
+    } catch (e) {
+      setMsg(e && e.code === "23505" ? "Bu ID raqami boshqa mijozda band" : "Xatolik yuz berdi");
+    }
   };
 
   return (
@@ -938,6 +951,16 @@ function BotControlPage({ shops, refreshAll }) {
       <button onClick={() => setSelectedShopId(null)} style={{ background: "none", border: "none", color: accent, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }}>← Do'konlar ro'yxatiga</button>
       <p style={{ fontSize: 16, fontWeight: 700, color: text, margin: "0 0 2px" }}>{shop.name}</p>
       <p style={{ fontSize: 12, color: textSoft, margin: "0 0 16px" }}>{shop.botToken ? "🟢 Bot ulangan" : "⚪ Bot hali ulanmagan"}</p>
+
+      {missingCount > 0 && (
+        <button
+          disabled={assigning}
+          onClick={runAssignMissing}
+          style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${accent}`, background: "rgba(47,191,158,0.12)", color: accent, fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 16, opacity: assigning ? 0.6 : 1 }}
+        >
+          {assigning ? "Beriyapti..." : `🔢 ID'si yo'q ${missingCount} ta mijozga avtomatik ID berish`}
+        </button>
+      )}
 
       {!showTokenForm ? (
         <button onClick={() => { setShowTokenForm(true); setTokenVal(shop.botToken || ""); }} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: accentGrad, color: "#08221E", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 20 }}>
@@ -962,13 +985,13 @@ function BotControlPage({ shops, refreshAll }) {
           <span style={{ fontSize: 13, color: text }}>{d.name}</span>
           {editingId === d.id ? (
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-              <input value={editVal} onChange={(e) => setEditVal(e.target.value.replace(/\D/g, ""))} className="qk-mono" style={{ width: 44, padding: "4px 6px", borderRadius: 6, border: `1px solid ${accent}`, background: "rgba(255,255,255,0.08)", color: text, fontSize: 12 }} autoFocus />
+              <input value={editVal} onChange={(e) => setEditVal(e.target.value.replace(/\D/g, ""))} className="qk-mono" style={{ width: 70, padding: "4px 6px", borderRadius: 6, border: `1px solid ${accent}`, background: "rgba(255,255,255,0.08)", color: text, fontSize: 12 }} autoFocus />
               <button onClick={() => saveDebtorNumber(d.id)} style={{ background: "none", border: "none", color: accent, fontSize: 13, cursor: "pointer" }}>✓</button>
               <button onClick={() => setEditingId(null)} style={{ background: "none", border: "none", color: textFaint, fontSize: 13, cursor: "pointer" }}>✕</button>
             </div>
           ) : (
             <button onClick={() => { setEditingId(d.id); setEditVal(String(d.debtorNumber ?? "")); }} className="qk-mono" style={{ background: "none", border: `1px solid ${glassBorder}`, borderRadius: 6, padding: "3px 8px", color: accent, fontSize: 12, cursor: "pointer" }}>
-              {d.debtorNumber != null ? String(d.debtorNumber).padStart(2, "0") : "— belgilash"}
+              {d.debtorNumber != null ? d.debtorNumber : "— belgilash"}
             </button>
           )}
         </div>
@@ -1000,7 +1023,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
     { key: "dashboard", label: "Dashboard", icon: "▦" },
     { key: "shops", label: "Ma'lumotlar va Avtorizatsiya", icon: "🏬" },
     { key: "analytics", label: "Analitika", icon: "📊" },
-    { key: "bot", label: "Bot va ID sozlamalari", icon: "🤖" },
+    { key: "bot", label: "Bot Nazorati", icon: "🤖" },
     { key: "settings", label: "Admin sozlamalari", icon: "⚙️" },
   ];
   const pageTitle = menuItems.find((m) => m.key === page)?.label || "Dashboard";

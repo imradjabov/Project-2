@@ -363,6 +363,9 @@ function parseAmountFlexible(val) {
   return isNaN(n) ? 0 : Math.round(n);
 }
 function normalizeKey(k) { return String(k || "").trim().toLowerCase(); }
+function findHeaderKey(keys, patterns) {
+  return keys.find((k) => { const nk = normalizeKey(k); return patterns.some((p) => nk.includes(p)); });
+}
 
 function ImportDebtorsModal({ shop, refreshAll, onClose }) {
   const [rows, setRows] = useState(null); // parsed preview rows
@@ -380,16 +383,31 @@ function ImportDebtorsModal({ shop, refreshAll, onClose }) {
       const wb = XLSX.read(buf, { type: "array", cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
-      const parsed = json.map((row) => {
-        const map = {};
-        Object.keys(row).forEach((k) => { map[normalizeKey(k)] = row[k]; });
-        const name = String(map["ism familiya"] || "").trim();
-        const amount = parseAmountFlexible(map["qarz miqdori"] || 0);
-        const createdAt = parseDateFlexible(map["qarz olingan kun/oy/yil"]);
-        const sellerName = String(map["qarz bergan sotuvchi"] || "").trim();
-        return { name, amount, createdAt, sellerName };
-      }).filter((r) => r.name && r.amount > 0);
-      if (parsed.length === 0) setErr("Faylda to'g'ri qatorlar topilmadi. Shablon ustunlari mos kelayotganini tekshiring.");
+      if (json.length === 0) {
+        setErr("Fayl bo'sh yoki ma'lumot topilmadi.");
+        setRows(null);
+        return;
+      }
+      const sampleKeys = Object.keys(json[0]);
+      const nameKey = findHeaderKey(sampleKeys, ["ism", "familiya"]);
+      const amountKey = findHeaderKey(sampleKeys, ["miqdor", "summa", "narx", "pul"]);
+      const dateKey = findHeaderKey(sampleKeys, ["olingan", "sana", "kun"]);
+      const sellerKey = findHeaderKey(sampleKeys, ["sotuvchi"]);
+
+      if (!nameKey || !amountKey) {
+        setErr(`Ustunlarni aniqlab bo'lmadi. Faylda topilgan ustunlar: "${sampleKeys.join('", "')}". Kamida ism-familiya va qarz miqdori ustunlari bo'lishi kerak.`);
+        setRows(null);
+        return;
+      }
+
+      const parsed = json.map((row) => ({
+        name: String(row[nameKey] || "").trim(),
+        amount: parseAmountFlexible(row[amountKey] || 0),
+        createdAt: dateKey ? parseDateFlexible(row[dateKey]) : new Date().toISOString(),
+        sellerName: sellerKey ? String(row[sellerKey] || "").trim() : "",
+      })).filter((r) => r.name && r.amount > 0);
+
+      if (parsed.length === 0) setErr("Faylda to'g'ri to'ldirilgan qatorlar topilmadi — ism va qarz miqdori bo'sh emasligini tekshiring.");
       setRows(parsed);
     } catch (e) {
       setErr("Faylni o'qib bo'lmadi. .xlsx formatida ekanini tekshiring.");

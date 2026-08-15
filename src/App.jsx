@@ -88,13 +88,14 @@ function FontLoad() {
       .qk-shell {
         width: 100%;
         max-width: 400px;
-        min-height: 660px;
+        height: 660px;
+        max-height: 660px;
         border-radius: 26px;
         box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
       }
       @media (max-width: 480px) {
         #root { padding: 0; }
-        .qk-shell { max-width: 100%; min-height: 100dvh; border-radius: 0; box-shadow: none; }
+        .qk-shell { max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; box-shadow: none; }
       }
     `}</style>
   );
@@ -935,7 +936,7 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderBottom: `1px solid ${glassBorder}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderBottom: `1px solid ${glassBorder}`, flexShrink: 0 }}>
         {page !== "dashboard" ? (
           <button onClick={() => goto("dashboard")} style={{ background: "none", border: "none", color: text, fontSize: 18, cursor: "pointer", padding: 0 }}>←</button>
         ) : (
@@ -948,7 +949,7 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
         </div>
       </div>
 
-      <div style={{ padding: "18px", overflowY: "auto", flex: 1, position: "relative" }}>{body}</div>
+      <div style={{ padding: "18px", overflowY: "auto", flex: 1, minHeight: 0, position: "relative" }}>{body}</div>
 
       {showAddModal && <AddDebtModal shop={shop} refreshAll={refreshAll} onClose={() => setShowAddModal(false)} />}
       {showPayModal && <PayDebtModal shop={shop} refreshAll={refreshAll} onClose={() => setShowPayModal(false)} />}
@@ -1290,7 +1291,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderBottom: `1px solid ${glassBorder}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderBottom: `1px solid ${glassBorder}`, flexShrink: 0 }}>
         {page !== "dashboard" ? (
           <button onClick={() => goto("dashboard")} style={{ background: "none", border: "none", color: text, fontSize: 18, cursor: "pointer", padding: 0 }}>←</button>
         ) : (
@@ -1300,7 +1301,7 @@ function AdminPanel({ data, refreshAll, onLogout }) {
         <p style={{ fontSize: 15, fontWeight: 700, color: text, margin: 0 }}>{pageTitle}</p>
       </div>
 
-      <div style={{ padding: "18px", overflowY: "auto", flex: 1 }}>{body}</div>
+      <div style={{ padding: "18px", overflowY: "auto", flex: 1, minHeight: 0 }}>{body}</div>
 
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 5 }}>

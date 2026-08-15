@@ -761,6 +761,99 @@ function SellersPage({ shop, refreshAll }) {
 
 // ================= OWNER PANEL =================
 
+function TelegramIdPage({ shop }) {
+  const [selected, setSelected] = useState(null);
+  const [msgText, setMsgText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [search, setSearch] = useState("");
+
+  const list = [...shop.debtors]
+    .filter((d) => !search.trim() || d.name.toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const quickTexts = [
+    "Hurmatli mijoz, qarz muddatingiz yetib keldi. Iltimos, imkon qadar tez to'lovni amalga oshiring.",
+    "Assalomu alaykum! Do'konimizda yangi aksiya bor, tashrif buyuring.",
+  ];
+
+  const send = async () => {
+    if (!msgText.trim() || !selected) return;
+    setBusy(true); setFeedback("");
+    try {
+      const res = await fetch("/api/send-message", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopId: shop.id, debtorId: selected.id, text: msgText.trim() }),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        setFeedback("✓ Xabar yuborildi");
+        setMsgText("");
+        setTimeout(() => { setSelected(null); setFeedback(""); }, 1200);
+      } else {
+        setFeedback(result.error || "Xatolik yuz berdi");
+      }
+    } catch (e) { setFeedback("Xatolik yuz berdi"); }
+    finally { setBusy(false); }
+  };
+
+  if (selected) {
+    return (
+      <div>
+        <button onClick={() => { setSelected(null); setMsgText(""); setFeedback(""); }} style={{ background: "none", border: "none", color: accent, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }}>← Ro'yxatga</button>
+        <p style={{ fontSize: 15, fontWeight: 700, color: text, margin: "0 0 2px" }}>{selected.name}</p>
+        <p style={{ fontSize: 11, color: textFaint, margin: "0 0 16px" }}>
+          ID: <span className="qk-mono">{selected.debtorNumber ?? "—"}</span> · {selected.telegramChatId ? "🟢 Botga ulangan" : "⚪ Botga hali ulanmagan"}
+        </p>
+
+        {!selected.telegramChatId ? (
+          <p style={{ fontSize: 12, color: warn, background: "rgba(232,185,74,0.12)", border: `1px solid ${warn}`, borderRadius: 10, padding: "12px" }}>
+            Bu mijoz hali Telegram botiga ID raqami orqali kirmagan, shuning uchun unga xabar yuborib bo'lmaydi. Mijoz botda /start bosib, ID raqamini yuborishi kerak.
+          </p>
+        ) : (
+          <>
+            <p style={{ fontSize: 12, color: textSoft, margin: "0 0 8px" }}>Tayyor namunalar:</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+              {quickTexts.map((qt, i) => (
+                <button key={i} onClick={() => setMsgText(qt)} style={{ textAlign: "left", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 9, padding: "9px 11px", color: textSoft, fontSize: 12, cursor: "pointer" }}>
+                  {qt}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={msgText}
+              onChange={(e) => setMsgText(e.target.value)}
+              placeholder="Xabar matnini yozing..."
+              rows={5}
+              style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
+            />
+            {feedback && <p style={{ fontSize: 12, color: feedback.startsWith("✓") ? accent : danger, margin: "0 0 10px" }}>{feedback}</p>}
+            <button disabled={busy || !msgText.trim()} onClick={send} style={{ width: "100%", padding: "12px", borderRadius: 9, border: "none", background: accentGrad, color: "#08221E", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: busy || !msgText.trim() ? 0.6 : 1 }}>
+              {busy ? "Yuborilmoqda..." : "📨 Botga yuborish"}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <input className="qk-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Ism familiya orqali qidirish" style={inputStyle} />
+      {list.length === 0 && <p style={{ fontSize: 12, color: textFaint, textAlign: "center", padding: "20px 0" }}>Mijoz topilmadi.</p>}
+      {list.map((d) => (
+        <button key={d.id} onClick={() => setSelected(d)} style={{ width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", background: glass, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${glassBorder}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, cursor: "pointer" }}>
+          <div>
+            <p style={{ fontSize: 13, color: text, margin: "0 0 2px" }}>{d.name}</p>
+            <p className="qk-mono" style={{ fontSize: 11, color: textFaint, margin: 0 }}>ID: {d.debtorNumber ?? "—"}</p>
+          </div>
+          <span style={{ fontSize: 16 }}>{d.telegramChatId ? "🟢" : "⚪"}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function OwnerPanel({ shop, refreshAll, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [page, setPage] = useState("dashboard");
@@ -780,6 +873,7 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
   const menuItems = [
     { key: "dashboard", label: "Dashboard", icon: "▦" },
     { key: "report", label: "Qarz hisoboti", icon: "📋" },
+    { key: "telegram", label: "Telegram ID", icon: "📨" },
     { key: "analytics", label: "Analitika", icon: "📊" },
     { key: "history", label: "Tarix", icon: "🕒" },
     { key: "sellers", label: "Sotuvchi", icon: "🧑‍💼" },
@@ -813,6 +907,8 @@ function OwnerPanel({ shop, refreshAll, onLogout }) {
     );
   } else if (page === "report") {
     body = <ReportPage shop={shop} refreshAll={refreshAll} />;
+  } else if (page === "telegram") {
+    body = <TelegramIdPage shop={shop} />;
   } else if (page === "analytics") {
     body = <OwnerAnalytics shop={shop} />;
   } else if (page === "history") {

@@ -97,6 +97,10 @@ function FontLoad() {
         #root { padding: 0; }
         .qk-shell { max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; box-shadow: none; }
       }
+      @media (orientation: landscape) and (max-height: 600px) {
+        #root { padding: 0; }
+        .qk-shell { max-width: 100%; width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; box-shadow: none; }
+      }
     `}</style>
   );
 }
@@ -1390,7 +1394,7 @@ export default function App() {
       )}
 
       {phase === "login" && (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px", position: "relative", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px", position: "relative", overflow: "auto" }}>
           <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(47,191,158,0.25), transparent 70%)" }} />
           <div style={{ width: "100%", background: glass, border: `1px solid ${glassBorder}`, borderRadius: 18, padding: "32px 26px", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", position: "relative" }}>
             <div style={{ textAlign: "center", marginBottom: 22 }}>

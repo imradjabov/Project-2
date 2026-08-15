@@ -927,9 +927,15 @@ function BotControlPage({ shops, refreshAll }) {
     setBusy(true);
     try {
       await updateShopBotToken(shop.id, tokenVal.trim());
+      const res = await fetch("/api/connect-bot", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopId: shop.id }),
+      });
+      const result = await res.json();
       await refreshAll();
-      setShowTokenForm(false); setTokenVal(""); setMsg("✓ Bot tokeni saqlandi");
-      setTimeout(() => setMsg(""), 2500);
+      setShowTokenForm(false); setTokenVal("");
+      setMsg(result.ok ? "✓ Bot ulandi va faollashtirildi!" : `Token saqlandi, lekin ulanishda xatolik: ${result.error || ""}`);
+      setTimeout(() => setMsg(""), 4000);
     } catch (e) { setMsg("Xatolik yuz berdi"); }
     finally { setBusy(false); }
   };

@@ -1317,6 +1317,9 @@ function AdminPanel({ data, refreshAll, onLogout }) {
             ))}
             <div style={{ borderTop: `1px solid ${glassBorder}`, marginTop: 14, paddingTop: 14 }}>
               <button onClick={onLogout} style={{ width: "100%", textAlign: "left", padding: "11px 10px", borderRadius: 10, border: "none", background: "none", color: danger, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>⏻ Chiqish</button>
+              <a href="https://d-kassa-uz.vercel.app/" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "11px 10px", borderRadius: 10, marginTop: 4, color: accent, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                <span style={{ fontSize: 15 }}>🚚</span> d-kassa.uz
+              </a>
             </div>
           </div>
         </div>
